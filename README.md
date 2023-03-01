@@ -1,8 +1,10 @@
-# feathr-cli
-
-[<center><img src="./feathr-logo.png" height="80"/></center>](https://github.com/idestis/feathr-cli)
+# [<img src="./feathr-logo.png" height="90"/>](https://github.com/idestis/feathr-cli)
 
 Feathr-cli is a complimentary tool. The goal is to provide a simple and efficient invoice generation experience.
+
+## Getting Started
+
+TBD
 
 ## Code
 
