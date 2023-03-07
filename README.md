@@ -2,6 +2,12 @@
 
 Feathr-cli is a complimentary tool. The goal is to provide a simple and efficient invoice generation experience.
 
+## Story
+
+Working with multiple clients in parallel, I was exhausted creating the invoices for each of them monthly, weekly, or by providing one-time service. I have tried no one or two tools, which suppose to ease this process, and I fall in love with one - [slimvoice.co](https://slimvoice.co).
+
+Same as `feathr-cli`, Slimvoice it is just a side project, but EOL date of this service is 1 April 2023. I did another try to find a tool which can replace slimvoice with a same easy of use, unfortunately was not able to find it. Some of them have a bunch of features which is not needed by the essence of my work, and some of them are slow or complex. So I have decided to create workflows in CLI way, which continues my work, so I easy can integrate send of invoices into my workflow. Hope you can as well.
+
 ## Getting Started
 
 TBD

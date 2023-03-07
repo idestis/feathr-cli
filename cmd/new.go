@@ -12,8 +12,10 @@ import (
 // newCmd represents the new command
 var newCmd = &cobra.Command{
 	Use:   "new",
-	Short: "A command to add a new clients",
-	Long:  `TBD`,
+	Short: "Have a new client? Create a new client profile",
+	Long: `Company profiles is a way to store the client information in a file or a SQLite database.
+This information is used to generate the invoices and keep track of invoices per a client.
+Simply answer the questions and the client profile will be created.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := types.Client{}
 		info := []*survey.Question{
@@ -21,6 +23,7 @@ var newCmd = &cobra.Command{
 				Name: "name",
 				Prompt: &survey.Input{
 					Message: "What is the client name? (e.g. Alphabet Inc.)",
+					Help:    "The client name is used to identify the client in the invoice.",
 				},
 				Validate:  survey.Required,
 				Transform: survey.Title,
@@ -29,19 +32,22 @@ var newCmd = &cobra.Command{
 				Name: "address",
 				Prompt: &survey.Input{
 					Message: "What is the client address?",
+					Help:    "The physical address of the client. This is used to generate the invoice.",
 				},
 				Validate: survey.Required,
 			},
 			{
 				Name: "iban",
 				Prompt: &survey.Input{
-					Message: "What is the client IBAN?",
+					Message: "What is the client IBAN? [optional]",
+					Help:    "The IBAN is used to generate the invoice. If you don't know the IBAN, you can leave this field empty.",
 				},
 			},
 			{
 				Name: "bank",
 				Prompt: &survey.Input{
 					Message: "What is the client bank details?",
+					Help:    "The bank details may be helpful tracking your income. If you don't know the bank details, you can leave this field empty.",
 				},
 			},
 		}

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,8 +17,8 @@ const (
 )
 
 var (
+	dataDir string
 	cfgFile string
-	dataDir = filepath.Join(os.Getenv("HOME"), "."+appName)
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -32,24 +33,16 @@ for small business owners and freelancers who need to create and manage invoices
 clients.`,
 
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		if cfgFile == "" {
-			home, err := os.UserHomeDir()
-			cobra.CheckErr(err)
-			cfgFile = filepath.Join(home, ".feathr-cli.yaml")
-		}
 		// allowCmds contains a list of commands that can be run without initializing the CLI
+
 		allowCmds := []string{"init", "version", "help"}
-		viper.SetConfigType("yaml")
-		viper.SetConfigFile(cfgFile)
 		_, err := os.Stat(cfgFile)
 		if os.IsNotExist(err) {
 			if !helpers.ContainsInSlice(cmd.Name(), allowCmds) {
 				return fmt.Errorf("please run '%v init' to initialize the Feathr", appName)
 			}
 		} else {
-			if err := viper.ReadInConfig(); err != nil {
-				return fmt.Errorf("error reading config file: %v", err)
-			}
+
 		}
 		return nil
 	},
@@ -61,5 +54,20 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/feathr-cli/config.yaml)")
+	cobra.OnInitialize(initConfig)
+
+}
+
+func initConfig() {
+	home, err := os.UserHomeDir()
+	cobra.CheckErr(err)
+	viper.AddConfigPath(home)
+	viper.SetConfigType("yaml")
+	viper.SetConfigName(".feathr-cli")
+	if err := viper.ReadInConfig(); err != nil {
+		cobra.CheckErr(errors.New(fmt.Sprintf("error reading config file: %v", err)))
+	}
+	// filepath.Join(home, fmt.Sprintf(".%v", appName))
+	dataDir = filepath.Join(home, fmt.Sprintf(".%v", appName))
+	cfgFile = viper.ConfigFileUsed()
 }

@@ -32,6 +32,9 @@ type Client struct {
 
 	// Email is the email address(es) of the client.
 	Email []string `survey:"email" json:"email"`
+
+	// Currency is the currency of the client.
+	Currency string `survey:"currency" json:"currency"`
 }
 
 func (c *Client) WriteClientInfo(dataDir string, storageType string) error {
@@ -44,7 +47,7 @@ func (c *Client) WriteClientInfo(dataDir string, storageType string) error {
 	}
 	switch storageType {
 	case "file":
-		err := os.MkdirAll(fmt.Sprintf("%s/data/clients/%d", dataDir, c.ID), 0700)
+		err := os.MkdirAll(fmt.Sprintf("%s/data/clients/%d/invoices", dataDir, c.ID), 0700)
 		if err != nil {
 			return fmt.Errorf("failed to create client directory: %v", err)
 		}
