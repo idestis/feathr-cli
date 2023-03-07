@@ -63,7 +63,7 @@ var invoicesCmd = &cobra.Command{
 			}
 			total := invoice.GetInvoiceTotal()
 			// TODO: Add currency and thousands separator
-			options = append(options, fmt.Sprintf("%d:\t%s\t\t%g", id, client_names[id].Name, total))
+			options = append(options, fmt.Sprintf("%d:\t%s // %g", id, client_names[id].Name, total))
 		}
 		if len(options) == 0 {
 			cobra.CheckErr(errors.New("no invoices found"))
@@ -80,6 +80,7 @@ var invoicesCmd = &cobra.Command{
 		idx, _ := strconv.Atoi(strings.Split(selected, ":")[0])
 		invoice := invoiceData[idx]
 		invoice.Print()
+		invoiceActions()
 	},
 }
 
@@ -91,4 +92,29 @@ func init() {
 		"Select the client ID")
 	invoicesCmd.Flags().BoolVarP(&hideSent, "no-sent", "", false, "If you want to hide invoices that have already been sent.")
 	rootCmd.AddCommand(invoicesCmd)
+}
+
+func invoiceActions() {
+	var action string
+	if err := survey.AskOne(&survey.Select{
+		Message:  "What would you like to do?",
+		Options:  []string{"Edit", "Send", "Generate", "Delete", "Duplicate"},
+		PageSize: 10,
+	}, &action); err != nil {
+		cobra.CheckErr(err)
+	}
+	switch action {
+	case "Edit":
+		fmt.Println("I'am editing")
+	case "Send":
+		fmt.Println("Send")
+	case "Delete":
+		fmt.Println("Delete")
+	case "Duplicate":
+		fmt.Println("Duplicate")
+	case "Generate":
+		fmt.Println("Generate")
+	default:
+		fmt.Print("Unknown action")
+	}
 }
