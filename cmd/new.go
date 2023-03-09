@@ -7,6 +7,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/idestis/feathr-cli/types"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // newCmd represents the new command
@@ -18,6 +19,12 @@ This information is used to generate the invoices and keep track of invoices per
 Simply answer the questions and the client profile will be created.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := types.Client{}
+		profile := types.Profile{}
+		storageType := viper.GetString("storage")
+		// Read the profile information
+		if err := profile.Load(dataDir, storageType); err != nil {
+			cobra.CheckErr(err)
+		}
 		info := []*survey.Question{
 			{
 				Name: "name",
@@ -48,6 +55,14 @@ Simply answer the questions and the client profile will be created.`,
 				Prompt: &survey.Input{
 					Message: "What is the client bank details?",
 					Help:    "The bank details may be helpful tracking your income. If you don't know the bank details, you can leave this field empty.",
+				},
+			},
+			{
+				Name: "currency",
+				Prompt: &survey.Input{
+					Message: "Which currency used to bill a client?",
+					Help:    "The currency may differ from client to client, but often you can use the same currency for all clients.",
+					Default: profile.Currency,
 				},
 			},
 		}

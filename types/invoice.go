@@ -13,6 +13,9 @@ import (
 	"time"
 
 	"github.com/cheynewallace/tabby"
+	thousands "github.com/floscodes/golang-thousands"
+	"github.com/idestis/feathr-cli/assets"
+	"github.com/signintech/gopdf"
 )
 
 // Invoice represents an invoice for a client.
@@ -232,7 +235,9 @@ func (invoice *Invoice) Print() {
 	t := tabby.New()
 	t.AddHeader("Description", "Qty.", "Price", "Total")
 	for _, item := range invoice.Items {
-		t.AddLine(item.Description, item.Quantity, item.UnitPrice, item.UnitPrice*item.Quantity)
+		unitPrice, _ := thousands.Separate(item.UnitPrice, "en")
+		total, _ := thousands.Separate(item.UnitPrice*item.Quantity, "en")
+		t.AddLine(item.Description, item.Quantity, unitPrice, total)
 	}
 
 	fmt.Printf("Invoice #%v \n\n", invoice.Number)
@@ -243,6 +248,173 @@ func (invoice *Invoice) Print() {
 	}
 	t.Print()
 	if invoice.Notes != "" {
-		fmt.Printf("\nNotes: %v\n", invoice.Notes)
+		fmt.Println()
+		fmt.Println(invoice.Notes)
+	}
+}
+
+func (invoice *Invoice) GeneratePDF(client Client, profile Profile, dataDir string) (error, string) {
+	path := filepath.Join(dataDir, "generated")
+	err := os.MkdirAll(path, 0755)
+	if err != nil {
+		return fmt.Errorf("error creating generated folder: %v", err), ""
+	}
+	pdf := gopdf.GoPdf{}
+	lineHeight := 16
+	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4}) //595.28, 841.89 = A4
+	pdf.AddPage()
+	data, err := assets.Asset("public/Roboto-Regular.ttf")
+	if err != nil {
+		return fmt.Errorf("error finding font: %v", err), ""
+	}
+	err = pdf.AddTTFFontData("Roboto", data)
+	if err != nil {
+		return fmt.Errorf("error finding font: %v", err), ""
+	}
+	err = pdf.SetFont("Roboto", "", 18)
+	if err != nil {
+		return fmt.Errorf("error setting font: %v", err), ""
+	}
+	pdf.AddPage()
+	pdf.SetXY(25, 25)              // Starting possition is x=25, y=25
+	pdf.SetTextColor(235, 100, 50) // Set Title Color
+	pdf.Cell(nil, fmt.Sprintf("Invoice %v", invoice.Number))
+	err = pdf.SetFont("Roboto", "", 13) // Reduce font size
+	if err != nil {
+		return fmt.Errorf("error reducing font size: %v", err), ""
+	}
+	pdf.SetXY(400, 25)
+	pdf.SetTextColor(200, 200, 200)
+	pdf.Cell(nil, "Issued:")
+	pdf.SetXY(400, 40)
+	pdf.Cell(nil, "Due:")
+	pdf.SetTextColor(0, 0, 0) // Back to black color
+	pdf.SetXY(450, 25)
+	pdf.Cell(nil, invoice.Sent.Format("January 2, 2006"))
+	pdf.SetXY(450, 40)
+	pdf.Cell(nil, invoice.Due.Format("January 2, 2006"))
+	// Client Information
+	pdf.SetXY(30, 100)
+	pdf.Cell(nil, client.Name)
+	addressLines := strings.Split(client.Address, "\n")
+	y := pdf.GetY()
+	for _, line := range addressLines {
+		pdf.SetX(30)
+		pdf.SetY(y + float64(lineHeight))
+		pdf.MultiCell(&gopdf.Rect{W: 250, H: float64(lineHeight)}, line)
+		y += float64(lineHeight)
+	}
+	pdf.SetXY(300, 100)
+	pdf.Cell(nil, profile.Name)
+	pdf.SetXY(300, 115)
+	profileAddressLines := strings.Split(profile.Address, "\n")
+	y = pdf.GetY()
+	for _, line := range profileAddressLines {
+		pdf.SetX(300)
+		pdf.SetY(y + float64(lineHeight))
+		pdf.MultiCell(&gopdf.Rect{W: 250, H: float64(lineHeight)}, line)
+		y += float64(lineHeight)
+	}
+	// pdf.MultiCell(&gopdf.Rect{W: 200, H: 40}, profile.Address)
+	pdf.SetXY(300, pdf.GetY()+float64(lineHeight))
+	pdf.Cell(nil, profile.IBAN)
+	bankLines := strings.Split(profile.Bank, "\n")
+	y = pdf.GetY() + float64(lineHeight)
+	for _, line := range bankLines {
+		pdf.SetX(300)
+		pdf.SetY(y + float64(lineHeight))
+		pdf.MultiCell(&gopdf.Rect{W: 250, H: float64(lineHeight)}, line)
+		y += float64(lineHeight)
+	}
+	y = pdf.GetY() + float64(50)
+	pdf.SetLineWidth(1)
+	pdf.SetStrokeColor(200, 200, 200)
+	qtyX := 300.0
+	priceX := 400.0
+	totalX := 500.0
+	pdf.SetTextColor(200, 200, 200)
+	pdf.SetXY(qtyX, y)
+	pdf.Cell(nil, "Qty.")
+	pdf.SetXY(priceX, y)
+	pdf.Cell(nil, "Price")
+	pdf.SetXY(totalX, y)
+	pdf.Cell(nil, "Total")
+	y += float64(lineHeight)
+	pdf.Line(10, y, 585, y)
+	pdf.SetTextColor(0, 0, 0)
+	y = pdf.GetY() + float64(lineHeight) + 5
+	for _, item := range invoice.Items {
+		// TODO: Make this aproach to check if items are too long and we need a new page
+		pdf.SetXY(15, y)
+		pdf.MultiCell(&gopdf.Rect{W: 250, H: float64(lineHeight)}, item.Description)
+		pdf.SetXY(qtyX, y)
+		pdf.Cell(nil, fmt.Sprint(item.Quantity))
+		pdf.SetXY(priceX, y)
+		unitPrice, _ := thousands.Separate(item.UnitPrice, "en")
+		pdf.Cell(nil, unitPrice)
+		pdf.SetXY(totalX, y)
+		itemTotal, _ := thousands.Separate(item.UnitPrice*item.Quantity, "en")
+		pdf.Cell(nil, itemTotal)
+		pdf.Line(10, y+float64(lineHeight), 585, y+float64(lineHeight))
+		y += float64(lineHeight) + 5
+	}
+	y = pdf.GetY() + float64(lineHeight) + float64(lineHeight)
+	pdf.SetXY(400, y)
+	pdf.SetTextColor(200, 200, 200)
+	pdf.Cell(nil, "Subtotal")
+	pdf.SetXY(totalX, y)
+	pdf.SetTextColor(235, 100, 50)
+	subtotal, _ := thousands.Separate(invoice.GetInvoiceTotal(), "en")
+	pdf.Cell(nil, subtotal)
+	y = 670
+	pdf.SetXY(15, y)
+	pdf.SetTextColor(0, 0, 0)
+	// Achieve word wrapping by splitting the text into multiple lines
+	notes, _ := pdf.SplitTextWithWordWrap(invoice.Notes, 560)
+	for _, line := range notes {
+		pdf.SetXY(15, y)
+		pdf.MultiCell(&gopdf.Rect{W: 560, H: float64(lineHeight)}, line)
+		y += float64(lineHeight)
+	}
+	y = pdf.GetY() + (float64(lineHeight) * 2)
+	pdf.Line(10, y, 585, y)
+	y += (float64(lineHeight) * 2)
+	pdf.SetXY(15, y)
+	pdf.SetTextColor(200, 200, 200)
+	pdf.Cell(nil, "Currency")
+	pdf.SetXY(80, y)
+	pdf.SetTextColor(0, 0, 0)
+	pdf.Cell(nil, strings.ToUpper(client.Currency))
+	// Write the invoice to a file
+	invoicePath := filepath.Join(path, fmt.Sprintf("%v.pdf", invoice.ID))
+	err = pdf.WritePdf(invoicePath) //TODO: make this dynamic
+	if err != nil {
+		return fmt.Errorf("error writing pdf: %v", err), ""
+	}
+	return nil, invoicePath
+}
+
+func (invoice *Invoice) Delete(dataDir string, storageType string) error {
+	switch storageType {
+	case "file":
+		invoicePath := filepath.Join(dataDir, "data", "clients", fmt.Sprintf("%d", invoice.ClientID), "invoices", fmt.Sprintf("%v.json", invoice.ID))
+		err := os.Remove(invoicePath)
+		if err != nil {
+			return fmt.Errorf("error deleting invoice: %v", err)
+		}
+		return nil
+	case "sqlite":
+		db, err := sql.Open("sqlite3", filepath.Join(dataDir, "feathr-cli.sql"))
+		if err != nil {
+			return fmt.Errorf("error opening database: %v", err)
+		}
+		defer db.Close()
+		_, err = db.Query("DELETE FROM invoices WHERE id = ?", invoice.ID)
+		if err != nil {
+			return fmt.Errorf("error deleting invoice: %v", err)
+		}
+		return nil
+	default:
+		return fmt.Errorf("unknown storage type: %v", storageType)
 	}
 }

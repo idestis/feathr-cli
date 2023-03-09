@@ -3,10 +3,13 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
+	thousands "github.com/floscodes/golang-thousands"
+	"github.com/idestis/feathr-cli/helpers"
 	"github.com/idestis/feathr-cli/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -20,7 +23,7 @@ var invoicesCmd = &cobra.Command{
 	Use:     "invoices",
 	Short:   "Manage an invoices in a simple way",
 	Long:    `TBD`,
-	Aliases: []string{"invoice"},
+	Aliases: []string{"invoice", "inv"},
 	Run: func(cmd *cobra.Command, args []string) {
 		storageType := viper.GetString("storage")
 		client_ids, err := types.GetClientIDs(dataDir, storageType)
@@ -53,7 +56,7 @@ var invoicesCmd = &cobra.Command{
 		// Create an options for the user to select
 		options := make([]string, 0)
 		for id, invoice := range invoiceData {
-			if clientID != 0 && clientID != id {
+			if clientID != 0 && clientID != int(invoice.ClientID) {
 				// Skip invoices for other clients
 				continue
 			}
@@ -61,13 +64,19 @@ var invoicesCmd = &cobra.Command{
 				// Hide sent invoices
 				continue
 			}
-			total := invoice.GetInvoiceTotal()
+			total, _ := thousands.Separate(invoice.GetInvoiceTotal(), "en")
 			// TODO: Add currency and thousands separator
-			options = append(options, fmt.Sprintf("%d:\t%s // %g", id, client_names[id].Name, total))
+			options = append(options, fmt.Sprintf("%d:\t%s // %v", id, client_names[int(invoice.ClientID)].Name, total))
 		}
 		if len(options) == 0 {
 			cobra.CheckErr(errors.New("no invoices found"))
 		}
+		sort.Slice(options, func(i, j int) bool {
+			name := strings.Split(options[i], "\t")[0]
+			next := strings.Split(options[j], "\t")[0]
+			return name > next
+		})
+
 		var selected string
 		if err := survey.AskOne(&survey.Select{
 			Message:  "Please select invoice?",
@@ -80,7 +89,9 @@ var invoicesCmd = &cobra.Command{
 		idx, _ := strconv.Atoi(strings.Split(selected, ":")[0])
 		invoice := invoiceData[idx]
 		invoice.Print()
-		invoiceActions()
+		profile := types.Profile{}
+		profile.Load(dataDir, storageType)
+		invoiceActions(invoice, client_names[int(invoice.ClientID)], profile)
 	},
 }
 
@@ -94,8 +105,9 @@ func init() {
 	rootCmd.AddCommand(invoicesCmd)
 }
 
-func invoiceActions() {
+func invoiceActions(invoice types.Invoice, client types.Client, profile types.Profile) {
 	var action string
+	storageType := viper.GetString("storage")
 	if err := survey.AskOne(&survey.Select{
 		Message:  "What would you like to do?",
 		Options:  []string{"Edit", "Send", "Generate", "Delete", "Duplicate"},
@@ -105,15 +117,36 @@ func invoiceActions() {
 	}
 	switch action {
 	case "Edit":
-		fmt.Println("I'am editing")
+		fmt.Println("I am so sorry, but this feature is not yet implemented.")
 	case "Send":
 		fmt.Println("Send")
 	case "Delete":
-		fmt.Println("Delete")
+		var confirm bool
+		if err := survey.AskOne(&survey.Confirm{
+			Message: "Are you sure you want to delete this invoice?",
+		}, &confirm); err != nil {
+			cobra.CheckErr(err)
+		}
+		if !confirm {
+			fmt.Println("Invoice has not been deleted.")
+			return
+		}
+		invoice.Delete(dataDir, storageType)
+		fmt.Printf("Invoice with number %d has been successfully deleted.\n", invoice.ID)
 	case "Duplicate":
-		fmt.Println("Duplicate")
+		clients, _ := types.GetClientIDs(dataDir, storageType)
+		_, ids, _ := types.GetInvoicesID(clients, dataDir, storageType)
+		last, _ := helpers.FindMaxInt(ids)
+		invoice.ID = uint(last + 1)
+		invoice.Number = fmt.Sprint(invoice.ID)
+		if err := invoice.WriteInvoice(dataDir, storageType); err != nil {
+			cobra.CheckErr(err)
+		}
+		fmt.Printf("Invoice with number %d has been successfully duplicated.\n", invoice.ID)
 	case "Generate":
-		fmt.Println("Generate")
+		err, path := invoice.GeneratePDF(client, profile, dataDir)
+		cobra.CheckErr(err)
+		fmt.Printf("Invoice generated successfully. You can find the generated file at: %s\n", path)
 	default:
 		fmt.Print("Unknown action")
 	}

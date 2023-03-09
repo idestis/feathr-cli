@@ -13,10 +13,11 @@ var search string
 
 // clientsCmd represents the clients command
 var clientsCmd = &cobra.Command{
-	Use:   "clients",
-	Short: "Manage the clients in a simple way",
-	Args:  cobra.NoArgs,
-	Long:  `TBD`,
+	Use:     "clients",
+	Short:   "Manage the clients in a simple way",
+	Args:    cobra.NoArgs,
+	Aliases: []string{"client", "clt"},
+	Long:    `TBD`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get the storage type from the config file.
 		storageType := viper.GetString("storage")

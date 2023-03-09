@@ -5,6 +5,18 @@ import (
 	"net/mail"
 )
 
+var (
+	currencySign = map[string]string{
+		"USD": "$",   // US Dollar
+		"EUR": "€",   // Euro
+		"GBP": "£",   // British Pound
+		"JPY": "¥",   // Japanese Yen
+		"CHF": "CHF", // Swiss Franc
+		"SGD": "S$",  // Singapore Dollar
+		"UAH": "₴",   // Ukrainian Hryvnia
+	}
+)
+
 // ContainsInSlice checks if a string is present in a slice of strings.
 func ContainsInSlice(s string, slice []string) bool {
 	// Convert the slice to a set to make lookups more efficient.
