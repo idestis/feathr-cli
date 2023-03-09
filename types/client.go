@@ -16,7 +16,7 @@ import (
 // Client represents a client of the business.
 type Client struct {
 	// ID is the unique identifier of the client.
-	ID uint `survey:"id" yaml:"id"`
+	ID uint `survey:"id" gorm:"primaryKey" json:"id"`
 
 	// Name is the name of the client.
 	Name string `survey:"name" json:"name"`

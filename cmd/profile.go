@@ -12,9 +12,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-// settingsCmd represents the settings command
-var settingsCmd = &cobra.Command{
-	Use:   "settings",
+// profileCmd represents the settings command
+var profileCmd = &cobra.Command{
+	Use:   "profile",
 	Short: "Configure user profile",
 	Long:  `TBD`,
 	ValidArgs: []string{
@@ -71,7 +71,7 @@ var settingsCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(settingsCmd)
+	rootCmd.AddCommand(profileCmd)
 }
 
 func namePrompt() (string, error) {

@@ -51,6 +51,15 @@ Additionally, the wizard will ask the user if they would like to generate a PDF 
 		} else {
 			viper.Set("gen_on_create", config.GenOnCreate)
 		}
+
+		if err := survey.AskOne(&survey.Confirm{
+			Message: "Would you like to generate a PDF version of the invoice automatically upon update?",
+			Default: true,
+		}, &config.GenOnUpdate); err != nil {
+			cobra.CheckErr(err)
+		} else {
+			viper.Set("gen_on_update", config.GenOnUpdate)
+		}
 	},
 }
 

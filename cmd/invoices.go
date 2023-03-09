@@ -20,9 +20,12 @@ var hideSent bool
 
 // invoicesCmd represents the invoices command
 var invoicesCmd = &cobra.Command{
-	Use:     "invoices",
-	Short:   "Manage an invoices in a simple way",
-	Long:    `TBD`,
+	Use:   "invoices",
+	Short: "Manage an invoices in a simple way",
+	Long: `This command allows you to manage your invoices.
+
+Just image days when you had to send an invoice for a client, or you had to duplicate this operation montly, weekly or even daily.
+Using this command you can edit, duplicate, send and delete invoices in a simple way.`,
 	Aliases: []string{"invoice", "inv"},
 	Run: func(cmd *cobra.Command, args []string) {
 		storageType := viper.GetString("storage")
@@ -147,7 +150,5 @@ func invoiceActions(invoice types.Invoice, client types.Client, profile types.Pr
 		err, path := invoice.GeneratePDF(client, profile, dataDir)
 		cobra.CheckErr(err)
 		fmt.Printf("Invoice generated successfully. You can find the generated file at: %s\n", path)
-	default:
-		fmt.Print("Unknown action")
 	}
 }
