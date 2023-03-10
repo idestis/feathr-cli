@@ -1,22 +1,21 @@
 package types
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/idestis/feathr-cli/helpers"
-	"github.com/spf13/cobra"
 )
 
 // Client represents a client of the business.
 type Client struct {
 	// ID is the unique identifier of the client.
-	ID uint `survey:"id" gorm:"primaryKey" json:"id"`
+	ID uint `survey:"id" json:"id"`
 
 	// Name is the name of the client.
 	Name string `survey:"name" json:"name"`
@@ -37,138 +36,90 @@ type Client struct {
 	Currency string `survey:"currency" json:"currency"`
 }
 
-func (c *Client) WriteClientInfo(dataDir string, storageType string) error {
-	ids, _ := GetClientIDs(dataDir, storageType)
+func (client *Client) WriteClientInfo(dataDir string) error {
+
+	// During the filesystem as main storage, we have to search for last client ID first,
+	// the next iteration will have caching to quickly fetch last ID instead of double work.
+	ids, _ := GetClientIDs(dataDir)
 	if len(ids) == 0 {
-		c.ID = 1
+		client.ID = 1
 	} else {
 		id, _ := helpers.FindMaxInt(ids)
-		c.ID = uint(id + 1)
+		client.ID = uint(id + 1)
 	}
-	switch storageType {
-	case "file":
-		err := os.MkdirAll(fmt.Sprintf("%s/data/clients/%d/invoices", dataDir, c.ID), 0700)
-		if err != nil {
-			return fmt.Errorf("failed to create client directory: %v", err)
-		}
-
-		filePath := fmt.Sprintf("%s/data/clients/%d/info.json", dataDir, c.ID)
-		file, err := os.Create(filePath)
-		if err != nil {
-			return fmt.Errorf("failed to create file: %v", err)
-		}
-		defer file.Close()
-
-		encoder := json.NewEncoder(file)
-		encoder.SetIndent("", "  ")
-		if err := encoder.Encode(c); err != nil {
-			return fmt.Errorf("failed to encode client info: %v", err)
-		}
-
-	case "sqlite":
-		db, err := sql.Open("sqlite3", fmt.Sprintf("%s/feather-cli.sql", dataDir))
-		if err != nil {
-			return fmt.Errorf("failed to open SQLite database: %v", err)
-		}
-		defer db.Close()
-
-		_, err = db.Exec("INSERT INTO clients (id, name, address, email) VALUES (?, ?, ?, ?, ?)", c.ID, c.Name, c.Address, c.Email)
-		if err != nil {
-			return fmt.Errorf("failed to insert client info into SQLite database: %v", err)
-		}
-
-	default:
-		return fmt.Errorf("invalid storage type: %s", storageType)
+	err := os.MkdirAll(fmt.Sprintf("%s/data/clients/%d/invoices", dataDir, client.ID), 0700)
+	if err != nil {
+		return fmt.Errorf("failed to create client directory: %v", err)
 	}
 
+	filePath := fmt.Sprintf("%s/data/clients/%d/info.json", dataDir, client.ID)
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %v", err)
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(client); err != nil {
+		return fmt.Errorf("failed to encode client info: %v", err)
+	}
 	return nil
 }
 
 // GetClientIDs returns a list of client IDs by scanning the directory
 // where client data is stored.
-func GetClientIDs(dataDir string, storageType string) ([]int, error) {
+func GetClientIDs(dataDir string) ([]int, error) {
 	var clientIDs []int
 
-	switch storageType {
-	case "file":
-		clientsDir := filepath.Join(dataDir, "data/clients")
-		files, err := ioutil.ReadDir(clientsDir)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, f := range files {
-			if f.IsDir() {
-				id, _ := strconv.Atoi(f.Name())
-				clientIDs = append(clientIDs, id)
-			}
-		}
-
-	case "sqlite":
-		db, err := sql.Open("sqlite3", fmt.Sprintf("%s/feather-cli.sql", dataDir))
-		cobra.CheckErr(err)
-		rows, err := db.Query("SELECT id FROM clients")
-		cobra.CheckErr(err)
-		defer rows.Close()
-
-		for rows.Next() {
-			var id int
-			err := rows.Scan(&id)
-			if err != nil {
-				return nil, err
-			}
-			clientIDs = append(clientIDs, id)
-		}
-
-	default:
-		return nil, fmt.Errorf("unknown storage type: %s", storageType)
+	clientsDir := filepath.Join(dataDir, "data/clients")
+	files, err := ioutil.ReadDir(clientsDir)
+	if err != nil {
+		return nil, err
 	}
 
+	for _, f := range files {
+		if f.IsDir() {
+			id, _ := strconv.Atoi(f.Name())
+			clientIDs = append(clientIDs, id)
+		}
+	}
 	return clientIDs, nil
 }
 
-// ReadClientInfo reads the client info for the given client ID from the configured storage.
+// ReadClientInfo reads the client info for the given client ID from the storage.
 // Returns an error if the client info cannot be read.
-func ReadClientInfo(id int, dataDir string, storageType string) (Client, error) {
-	var clientInfo Client
-
-	switch storageType {
-	case "file":
-		// Build the path to the client info file.
-		clientInfoFile := fmt.Sprintf("%s/data/clients/%d/info.json", dataDir, id)
-
-		// Open the client info file.
-		clientInfoBytes, err := ioutil.ReadFile(clientInfoFile)
-		if err != nil {
-			return clientInfo, err
-		}
-
-		// Unmarshal the client info data into a ClientInfo struct.
-		err = json.Unmarshal(clientInfoBytes, &clientInfo)
-		if err != nil {
-			return clientInfo, err
-		}
-
-	case "sqlite":
-		// Open a connection to the SQLite database.
-		db, err := sql.Open("sqlite3", fmt.Sprintf("%s/feather-cli.sql", dataDir))
-		if err != nil {
-			return clientInfo, err
-		}
-		defer db.Close()
-
-		// Prepare a query to select the client info for the given ID.
-		query := "SELECT name, email, phone FROM clients WHERE id = ?"
-
-		// Query the database and scan the result into a ClientInfo struct.
-		err = db.QueryRow(query, id).Scan(&clientInfo.Name, &clientInfo.Email)
-		if err != nil {
-			return clientInfo, err
-		}
-
-	default:
-		return clientInfo, fmt.Errorf("unknown storage type %q", storageType)
+func ReadClientInfo(id int, dataDir string) (Client, error) {
+	client := Client{
+		ID: uint(id),
 	}
 
-	return clientInfo, nil
+	// Build the path to the client info file.
+	clientInfoFile := fmt.Sprintf("%s/data/clients/%d/info.json", dataDir, client.ID)
+
+	// Open the client info file.
+	clientInfoBytes, err := ioutil.ReadFile(clientInfoFile)
+	if err != nil {
+		return client, err
+	}
+
+	// Unmarshal the client info data into a ClientInfo struct.
+	err = json.Unmarshal(clientInfoBytes, &client)
+	if err != nil {
+		return client, err
+	}
+
+	return client, nil
+}
+
+func (client *Client) Print() error {
+	fmt.Println("\033[32mAddress:\033[0m", client.Address)
+	fmt.Println("\033[32mEmails:\033[0m", strings.Join(client.Email, ", "))
+	if client.IBAN != "" {
+		fmt.Println("\033[32mIBAN:\033[0m", client.IBAN)
+	}
+	if client.Bank != "" {
+		fmt.Println("\033[32mBank Details:\033[0m", client.Bank)
+	}
+	return nil
 }

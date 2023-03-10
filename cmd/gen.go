@@ -7,7 +7,6 @@ import (
 	"github.com/idestis/feathr-cli/helpers"
 	"github.com/idestis/feathr-cli/types"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -21,8 +20,7 @@ var genCmd = &cobra.Command{
 	Short: "Generate a PDF invoice from a prepared invoice",
 	Long:  `TBD`,
 	Run: func(cmd *cobra.Command, args []string) {
-		storageType := viper.GetString("storage")
-		client_ids, err := types.GetClientIDs(dataDir, storageType)
+		client_ids, err := types.GetClientIDs(dataDir)
 		cobra.CheckErr(err)
 		if client > 0 {
 			if !helpers.ContainsIntInSlice(client, client_ids) {
@@ -32,7 +30,7 @@ var genCmd = &cobra.Command{
 			// Read the client information from the file or SQLite database.
 			clients := make(map[string]int)
 			for _, id := range client_ids {
-				client, err := types.ReadClientInfo(id, dataDir, storageType)
+				client, err := types.ReadClientInfo(id, dataDir)
 				cobra.CheckErr(err)
 				clients[client.Name] = id
 			}

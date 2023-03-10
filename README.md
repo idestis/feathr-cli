@@ -5,9 +5,9 @@ Feathr-cli is a complimentary tool. The goal is to provide a simple and efficien
 - [Story](#story)
 - [Getting Started](#getting-started)
   - [Installation](#installation)
+    - [Homebrew](#homebrew)
   - [Initialization](#initialization)
   - [User Profile](#user-profile)
-  - [Homebrew](#homebrew)
 - [Code](#code)
 - [Security](#security)
 - [Future](#future)
@@ -30,6 +30,10 @@ Once you have downloaded the binary, you can add it to your system's `PATH` envi
 
 Alternatively, you can install `feathr-cli` using the Go toolchain by running the command `go get -u github.com/idestis/feathr-cli`. This will download the latest version of `feathr-cli` and install it to your `$GOPATH/bin` directory, which you can also add to your system's `PATH` environment variable.
 
+#### Homebrew
+
+Brew tap and formula will be released soon. Stay tunned.
+
 ### Initialization
 
 The `init` block is the first step in using the `feathr-cli` tool. During the init process, you can configure the preferred storage, which can be a sqlite or file-based storage, and also make other tweaks to the tool's behavior, such as choosing between **Generate on Create** feature or fulfill SMTP configuration to allow you send messages from the tool.
@@ -51,10 +55,6 @@ The `feathr-cli` have support next profile settings:
 - **IBAN**: The IBAN field is a unique identifier used to represent a bank account and facilitate international money transfers.
 - **Bank**: The multi-line bank details to receive the payment.
 
-### Homebrew
-
-Brew tap and formula will be released soon.
-
 ## Code
 
 The code is a side project created by a single individual to resolve a personal challenge of quickly sending invoices. The developer chose to embark on this project to solve their own issue, resulting in a codebase designed for a specific purpose. Despite being the work of a single individual, the codebase may still offer users an efficient and effective way to manage their invoicing.
@@ -66,4 +66,4 @@ The tool does not use the data for any analytical purposes, guaranteeing that us
 
 ## Future
 
-Feathr-cli aims to expand its services to include a new feature in the Self-Sovereign Identity (SSI) space, providing users with the ability to send invoices as Verified Credentials. This feature is designed to improve trust and confidence in individual entrepreneurs by allowing them to leverage the benefits of SSI technology. By incorporating this new feature, Feathr.io hopes to provide a more secure and reliable invoicing experience for its users.
+Feathr-cli aims to expand its services to include a new feature in the Self-Sovereign Identity (SSI) space, providing users with the ability to send invoices as Verified Credentials. This feature is designed to improve trust and confidence in individual entrepreneurs by allowing them to leverage the benefits of SSI technology. By incorporating this new feature, Feathr hopes to provide a more secure and reliable invoicing experience for the users.

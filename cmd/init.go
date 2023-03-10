@@ -29,27 +29,11 @@ Additionally, the wizard will ask the user if they would like to generate a PDF 
 			fmt.Println("Configuration file already exists.")
 			os.Exit(1)
 		}
-		// General configuration settings
-		if err := survey.AskOne(&survey.Select{
-			Message: "What storage do you want to use?",
-			Options: []string{"sqlite", "file"},
-			Default: "sqlite",
-		}, &config.Storage); err != nil {
-			cobra.CheckErr(err)
-		}
-		viper.Set("storage", config.Storage)
-		if config.Storage == "sqlite" {
-			// TODO: Create a database file
-		} else {
-			os.MkdirAll(fmt.Sprintf("%s/data", dataDir), 0700)
-		}
 		if err := survey.AskOne(&survey.Confirm{
 			Message: "Would you like to generate a PDF version of the invoice automatically upon creation?",
 			Default: true,
 		}, &config.GenOnCreate); err != nil {
 			cobra.CheckErr(err)
-		} else {
-			viper.Set("gen_on_create", config.GenOnCreate)
 		}
 
 		if err := survey.AskOne(&survey.Confirm{
@@ -57,9 +41,30 @@ Additionally, the wizard will ask the user if they would like to generate a PDF 
 			Default: true,
 		}, &config.GenOnUpdate); err != nil {
 			cobra.CheckErr(err)
-		} else {
-			viper.Set("gen_on_update", config.GenOnUpdate)
 		}
+
+		var setupSMPT bool
+		if err := survey.AskOne(&survey.Confirm{
+			Message: "Would you like to setup SMTP settings to send emails?",
+			Default: false,
+		}, &setupSMPT); err != nil {
+			cobra.CheckErr(err)
+		}
+		viper.Set("gen_on_create", config.GenOnCreate)
+		viper.Set("gen_on_update", config.GenOnUpdate)
+		if !setupSMPT {
+			viper.Set("smtp", nil)
+			fmt.Println("Skipping SMTP setup. You can configure SMTP settings later by running 'feathr-cli config smtp'.")
+		} else {
+			config.SMTP, err = types.PromptSMTP()
+			cobra.CheckErr(err)
+			viper.Set("smtp", config.SMTP)
+		}
+
+		err = os.MkdirAll(fmt.Sprintf("%v/data/clients", dataDir), 0700)
+		cobra.CheckErr(err)
+
+		viper.SafeWriteConfig()
 	},
 }
 

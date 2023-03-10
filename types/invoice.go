@@ -1,7 +1,6 @@
 package types
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -53,8 +52,8 @@ type Item struct {
 	// ID is the unique identifier of the item.
 	ID uint `json:"id"`
 
-	// InvoiceID is the unique identifier of the invoice the item belongs to.
-	InvoiceID uint `json:"invoice_id"`
+	// // InvoiceID is the unique identifier of the invoice the item belongs to.
+	// InvoiceID uint `json:"invoice_id"`
 
 	// Description is a brief description of the item.
 	Description string `survey:"description" json:"description"`
@@ -66,68 +65,38 @@ type Item struct {
 	UnitPrice float64 `survey:"unit_price" json:"unit_price"`
 }
 
-func GetInvoicesID(clientIDs []int, dataDir string, storageType string) (map[int]string, []int, error) {
+func GetInvoicesID(clientIDs []int, dataDir string) (map[int]string, []int, error) {
 	// Initialize variables to hold the invoice IDs and paths.
 	invoiceIDs := make([]int, 0)
 	invoicePaths := make(map[int]string)
 
 	// Iterate over the client IDs.
 	for _, id := range clientIDs {
-		// Check if the storage type is "file".
-		if storageType == "file" {
-			// Construct the path to the invoices directory for this client.
-			invoicesPath := filepath.Join(dataDir, "data", "clients", strconv.Itoa(id), "invoices")
-			// Walk over the invoices directory to find invoice files.
-			err := filepath.Walk(invoicesPath, func(path string, info os.FileInfo, err error) error {
-				// Check if the file is a JSON file.
-				if strings.HasSuffix(info.Name(), ".json") {
-					// Extract the invoice ID from the file name.
-					parts := strings.Split(info.Name(), ".")
-					if len(parts) != 2 {
-						return fmt.Errorf("invalid invoice file name: %s", info.Name())
-					}
-					invoiceID, err := strconv.Atoi(parts[0])
-					if err != nil {
-						return fmt.Errorf("invalid invoice file name: %s", info.Name())
-					}
 
-					// Add the invoice ID and path to the maps.
-					invoiceIDs = append(invoiceIDs, invoiceID)
-					invoicePaths[invoiceID] = strings.Replace(path, dataDir, "", 1)
+		// Construct the path to the invoices directory for this client.
+		invoicesPath := filepath.Join(dataDir, "data", "clients", strconv.Itoa(id), "invoices")
+		// Walk over the invoices directory to find invoice files.
+		err := filepath.Walk(invoicesPath, func(path string, info os.FileInfo, err error) error {
+			// Check if the file is a JSON file.
+			if strings.HasSuffix(info.Name(), ".json") {
+				// Extract the invoice ID from the file name.
+				parts := strings.Split(info.Name(), ".")
+				if len(parts) != 2 {
+					return fmt.Errorf("invalid invoice file name: %s", info.Name())
 				}
-				return nil
-			})
-			if err != nil {
-				return nil, nil, err
-			}
-		} else if storageType == "sqlite" {
-			// Query the database to get the invoice IDs.
-			db, err := sql.Open("sqlite3", filepath.Join(dataDir, "feathr-cli.sql"))
-			if err != nil {
-				return nil, nil, err
-			}
-			defer db.Close()
-			rows, err := db.Query("SELECT id FROM invoices WHERE client_id = ?", id)
-			if err != nil {
-				return nil, nil, err
-			}
-			defer rows.Close()
-
-			// Add the invoice IDs to the slice.
-			for rows.Next() {
-				var invoiceID int
-				err := rows.Scan(&invoiceID)
+				invoiceID, err := strconv.Atoi(parts[0])
 				if err != nil {
-					return nil, nil, err
+					return fmt.Errorf("invalid invoice file name: %s", info.Name())
 				}
+
+				// Add the invoice ID and path to the maps.
 				invoiceIDs = append(invoiceIDs, invoiceID)
+				invoicePaths[invoiceID] = strings.Replace(path, dataDir, "", 1)
 			}
-			err = rows.Err()
-			if err != nil {
-				return nil, nil, err
-			}
-		} else {
-			return nil, nil, fmt.Errorf("invalid storage type: %s", storageType)
+			return nil
+		})
+		if err != nil {
+			return nil, nil, err
 		}
 	}
 
@@ -137,90 +106,48 @@ func GetInvoicesID(clientIDs []int, dataDir string, storageType string) (map[int
 	return invoicePaths, invoiceIDs, nil
 }
 
-func (invoice *Invoice) WriteInvoice(dataDir string, storageType string) error {
-	if storageType == "file" {
-		// Create the invoices directory for this client if it doesn't exist.
-		invoicesDir := filepath.Join(dataDir, "data", "clients", fmt.Sprintf("%d", invoice.ClientID), "invoices")
-		err := os.MkdirAll(invoicesDir, 0755)
-		if err != nil {
-			return err
-		}
+func (invoice *Invoice) WriteInvoice(dataDir string) error {
 
-		// Marshal the invoice to JSON.
-		data, err := json.Marshal(invoice)
-		if err != nil {
-			return err
-		}
-
-		// Write the JSON data to a file.
-		invoicePath := filepath.Join(invoicesDir, fmt.Sprintf("%d.json", invoice.ID))
-		err = ioutil.WriteFile(invoicePath, data, 0644)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	} else if storageType == "sqlite" {
-		// Insert the invoice into the database.
-		db, err := sql.Open("sqlite3", filepath.Join(dataDir, "feathr-cli.sql"))
-		if err != nil {
-			return err
-		}
-		defer db.Close()
-
-		stmt, err := db.Prepare("INSERT INTO invoices (id, client_id, amount) VALUES (?, ?, ?)")
-		if err != nil {
-			return err
-		}
-		defer stmt.Close()
-
-		_, err = stmt.Exec(invoice.ID, invoice.ClientID, invoice.Items)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	} else {
-		return fmt.Errorf("invalid storage type: %s", storageType)
+	// Create the invoices directory for this client if it doesn't exist.
+	invoicesDir := filepath.Join(dataDir, "data", "clients", fmt.Sprintf("%d", invoice.ClientID), "invoices")
+	err := os.MkdirAll(invoicesDir, 0755)
+	if err != nil {
+		return err
 	}
+
+	// Marshal the invoice to JSON.
+	data, err := json.Marshal(invoice)
+	if err != nil {
+		return err
+	}
+
+	// Write the JSON data to a file.
+	invoicePath := filepath.Join(invoicesDir, fmt.Sprintf("%d.json", invoice.ID))
+	err = ioutil.WriteFile(invoicePath, data, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func ReadInvoice(id int, path string, dataDir string, storageType string) (Invoice, error) {
+func ReadInvoice(id int, path string, dataDir string) (Invoice, error) {
 	invoice := Invoice{}
-
-	if storageType == "file" {
-		// Read the JSON data from the file.
-		invoicePath := filepath.Join(dataDir, path)
-		data, err := ioutil.ReadFile(invoicePath)
-		if err != nil {
-			return invoice, err
-		}
-
-		// Unmarshal the JSON data into the invoice.
-		err = json.Unmarshal(data, &invoice)
-		if err != nil {
-			return invoice, err
-		}
-
-		return invoice, nil
-	} else if storageType == "sqlite" {
-		// Query the database to get the invoice.
-		db, err := sql.Open("sqlite3", filepath.Join(dataDir, "feathr-cli.sql"))
-		if err != nil {
-			return invoice, err
-		}
-		defer db.Close()
-
-		row := db.QueryRow("SELECT id, client_id, number, issued, due, sent, notes FROM invoices WHERE id = ?", id)
-		err = row.Scan(&invoice.ID, &invoice.ClientID, &invoice.Number, &invoice.Issued, &invoice.Due, &invoice.Sent, &invoice.Notes)
-		if err != nil {
-			return invoice, err
-		}
-
-		return invoice, nil
-	} else {
-		return invoice, fmt.Errorf("invalid storage type: %s", storageType)
+	// Read the JSON data from the file.
+	invoicePath := filepath.Join(dataDir, path)
+	data, err := ioutil.ReadFile(invoicePath)
+	if err != nil {
+		return invoice, err
 	}
+
+	// Unmarshal the JSON data into the invoice.
+	err = json.Unmarshal(data, &invoice)
+	if err != nil {
+		return invoice, err
+	}
+
+	return invoice, nil
+
 }
 
 func (invoice *Invoice) GetInvoiceTotal() float64 {
@@ -394,27 +321,12 @@ func (invoice *Invoice) GeneratePDF(client Client, profile Profile, dataDir stri
 	return nil, invoicePath
 }
 
-func (invoice *Invoice) Delete(dataDir string, storageType string) error {
-	switch storageType {
-	case "file":
-		invoicePath := filepath.Join(dataDir, "data", "clients", fmt.Sprintf("%d", invoice.ClientID), "invoices", fmt.Sprintf("%v.json", invoice.ID))
-		err := os.Remove(invoicePath)
-		if err != nil {
-			return fmt.Errorf("error deleting invoice: %v", err)
-		}
-		return nil
-	case "sqlite":
-		db, err := sql.Open("sqlite3", filepath.Join(dataDir, "feathr-cli.sql"))
-		if err != nil {
-			return fmt.Errorf("error opening database: %v", err)
-		}
-		defer db.Close()
-		_, err = db.Query("DELETE FROM invoices WHERE id = ?", invoice.ID)
-		if err != nil {
-			return fmt.Errorf("error deleting invoice: %v", err)
-		}
-		return nil
-	default:
-		return fmt.Errorf("unknown storage type: %v", storageType)
+func (invoice *Invoice) Delete(dataDir string) error {
+	invoicePath := filepath.Join(dataDir, "data", "clients", fmt.Sprintf("%d", invoice.ClientID), "invoices", fmt.Sprintf("%v.json", invoice.ID))
+	err := os.Remove(invoicePath)
+	if err != nil {
+		return fmt.Errorf("error deleting invoice: %v", err)
 	}
+	return nil
+
 }

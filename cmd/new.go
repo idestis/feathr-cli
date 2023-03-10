@@ -7,7 +7,6 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/idestis/feathr-cli/types"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // newCmd represents the new command
@@ -20,9 +19,9 @@ Simply answer the questions and the client profile will be created.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := types.Client{}
 		profile := types.Profile{}
-		storageType := viper.GetString("storage")
 		// Read the profile information
-		if err := profile.Load(dataDir, storageType); err != nil {
+		if err := profile.Load(dataDir); err != nil {
+			// FIXME: Handle the error with WARN instead of FATAL
 			cobra.CheckErr(err)
 		}
 		info := []*survey.Question{
@@ -46,7 +45,7 @@ Simply answer the questions and the client profile will be created.`,
 			{
 				Name: "iban",
 				Prompt: &survey.Input{
-					Message: "What is the client IBAN? [optional]",
+					Message: "What is the client IBAN?",
 					Help:    "The IBAN is used to generate the invoice. If you don't know the IBAN, you can leave this field empty.",
 				},
 			},
@@ -72,7 +71,7 @@ Simply answer the questions and the client profile will be created.`,
 
 		var emails string
 		if err := survey.AskOne(&survey.Multiline{
-			Message: "What is the client emails? (starting each on a new line)",
+			Message: "What is the client emails? (starting each on separate line)",
 		}, &emails); err != nil {
 			cobra.CheckErr(err)
 		} else {
@@ -82,8 +81,7 @@ Simply answer the questions and the client profile will be created.`,
 			}
 		}
 		fmt.Printf("%+v", client)
-		// TODO: Placeholder on how to write the client info to a file
-		if err := client.WriteClientInfo(dataDir, "file"); err != nil {
+		if err := client.WriteClientInfo(dataDir); err != nil {
 			cobra.CheckErr(err)
 		}
 	},

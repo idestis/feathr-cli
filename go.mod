@@ -9,6 +9,7 @@ require (
 	github.com/signintech/gopdf v0.16.1
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.15.0
+	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
 	gorm.io/driver/sqlite v1.4.4
 	gorm.io/gorm v1.24.6
 )

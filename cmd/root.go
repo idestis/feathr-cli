@@ -1,15 +1,12 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"github.com/idestis/feathr-cli/helpers"
 )
 
 const (
@@ -33,41 +30,37 @@ for small business owners and freelancers who need to create and manage invoices
 clients.`,
 
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// allowCmds contains a list of commands that can be run without initializing the CLI
 
-		allowCmds := []string{"init", "version", "help"}
-		_, err := os.Stat(cfgFile)
-		if os.IsNotExist(err) {
-			if !helpers.ContainsInSlice(cmd.Name(), allowCmds) {
-				return fmt.Errorf("please run '%v init' to initialize the Feathr", appName)
+		home, err := os.UserHomeDir()
+		cobra.CheckErr(err)
+		viper.SetConfigName(".feathr-cli")
+		viper.SetConfigType("yaml")
+		viper.AddConfigPath(home)
+		err = viper.ReadInConfig()
+		if err != nil {
+			// Check if config file already exists
+			if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+				// Config file doesn't exist, check if command is allowed
+				if cmd.Name() != "init" && cmd.Name() != "version" {
+					return fmt.Errorf("please run '%v init' to initialize the Feathr CLI", appName)
+				}
+				return nil
 			}
-		} else {
-
+			// Config file exists but failed to read it, report error
+			return fmt.Errorf("failed to read config file: %v", err)
 		}
+
 		return nil
 	},
 }
 
 func Execute() {
 	cobra.CheckErr(rootCmd.Execute())
-
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
-}
-
-func initConfig() {
 	home, err := os.UserHomeDir()
 	cobra.CheckErr(err)
-	viper.AddConfigPath(home)
-	viper.SetConfigType("yaml")
-	viper.SetConfigName(".feathr-cli")
-	if err := viper.ReadInConfig(); err != nil {
-		cobra.CheckErr(errors.New(fmt.Sprintf("error reading config file: %v", err)))
-	}
-	// filepath.Join(home, fmt.Sprintf(".%v", appName))
 	dataDir = filepath.Join(home, fmt.Sprintf(".%v", appName))
 	cfgFile = viper.ConfigFileUsed()
 }

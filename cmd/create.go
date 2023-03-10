@@ -10,22 +10,25 @@ import (
 	"github.com/idestis/feathr-cli/helpers"
 	"github.com/idestis/feathr-cli/types"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Simply create an invoice",
-	Args:  cobra.NoArgs,
-	Long:  `TBD`,
+	Long: `Create an invoice for the client by selecting the client from the list of available clients.
+
+When you need to create invoice for the new client, proceed with client creation first.
+If you know the client ID, you can pass it as an argument or the flag --client to the command.`,
+	Args: cobra.MatchAll(cobra.OnlyValidArgs, cobra.MaximumNArgs(1), cobra.MinimumNArgs(0)),
 	Run: func(cmd *cobra.Command, args []string) {
-		// Get the storage type
-		storageType := viper.GetString("storage")
 		// Read the data in order to get the client IDs
-		client_ids, err := types.GetClientIDs(dataDir, storageType)
+		client_ids, err := types.GetClientIDs(dataDir)
 		invoice := types.Invoice{}
 		cobra.CheckErr(err)
+		if len(args) > 0 {
+			clientID, _ = strconv.Atoi(args[0])
+		}
 		if clientID > 0 {
 			// Check if the client ID is valid
 			if !helpers.ContainsIntInSlice(clientID, client_ids) {
@@ -36,7 +39,7 @@ var createCmd = &cobra.Command{
 			// Read the client information from the file or SQLite database.
 			clients := make(map[string]int)
 			for _, id := range client_ids {
-				client, err := types.ReadClientInfo(id, dataDir, storageType)
+				client, err := types.ReadClientInfo(id, dataDir)
 				cobra.CheckErr(err)
 				clients[client.Name] = id
 			}
@@ -56,7 +59,7 @@ proceed with client creation first.`,
 			}
 			invoice.ClientID = uint(clients[selected])
 		}
-		_, invoiceIDs, _ := types.GetInvoicesID(client_ids, dataDir, storageType)
+		_, invoiceIDs, _ := types.GetInvoicesID(client_ids, dataDir)
 		another := true
 		if len(invoiceIDs) > 0 {
 			next, _ := helpers.FindMaxInt(invoiceIDs)
@@ -129,21 +132,14 @@ proceed with client creation first.`,
 		}
 		invoice.Issued = now
 		profile := types.Profile{}
-		profile.Load(dataDir, storageType)
+		profile.Load(dataDir)
 		due, _ := strconv.Atoi(profile.Due)
 		invoice.Due = now.AddDate(0, 0, due)
 		invoice.Print()
-		invoice.WriteInvoice(dataDir, storageType)
+		invoice.WriteInvoice(dataDir)
 	},
 }
 
 func init() {
 	invoicesCmd.AddCommand(createCmd)
-	createCmd.Flags().IntVarP(
-		&clientID,
-		"client-id",
-		"c",
-		0,
-		"Create an invoice for a specific client ID, otherwise you will be prompted to select a client.",
-	)
 }

@@ -9,14 +9,12 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/idestis/feathr-cli/types"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // profileCmd represents the settings command
 var profileCmd = &cobra.Command{
 	Use:   "profile",
-	Short: "Configure user profile",
-	Long:  `TBD`,
+	Short: "Configure individual user profile",
 	ValidArgs: []string{
 		"name",
 		"currency",
@@ -28,42 +26,34 @@ var profileCmd = &cobra.Command{
 	Args: cobra.MatchAll(cobra.OnlyValidArgs, cobra.MaximumNArgs(1), cobra.MinimumNArgs(0)),
 	Run: func(cmd *cobra.Command, args []string) {
 		profile := types.Profile{}
-		storageType := viper.GetString("storage")
-		if !profile.Exists(dataDir, storageType) && len(args) == 0 {
+		if !profile.Exists(dataDir) && len(args) == 0 {
 			profile.Name, _ = namePrompt()
 			profile.Currency, _ = currencyPrompt()
 			profile.Due, _ = duePrompt()
 			profile.Address, _ = addressPrompt()
 			profile.IBAN, _ = ibanPrompt()
 			profile.Bank, _ = bankDetailsPrompt()
-			profile.Write(dataDir, storageType)
+			profile.Write(dataDir)
 		} else if len(args) == 1 {
-			profile.Load(dataDir, storageType)
+			profile.Load(dataDir)
 			switch args[0] {
 			case "name":
 				profile.Name, _ = namePrompt()
-				profile.Write(dataDir, storageType)
 			case "currency":
 				profile.Currency, _ = currencyPrompt()
-				profile.Write(dataDir, storageType)
 			case "due":
 				profile.Due, _ = duePrompt()
-				profile.Write(dataDir, storageType)
 			case "address":
 				profile.Address, _ = addressPrompt()
-				profile.Write(dataDir, storageType)
 			case "iban":
 				profile.IBAN, _ = ibanPrompt()
-				profile.Write(dataDir, storageType)
 			case "bank":
 				profile.Bank, _ = bankDetailsPrompt()
-				profile.Write(dataDir, storageType)
-			default:
-				fmt.Println("Invalid argument")
 			}
+			profile.Write(dataDir)
 			printProfile(profile)
 		} else {
-			profile.Load(dataDir, storageType)
+			profile.Load(dataDir)
 			printProfile(profile)
 		}
 
