@@ -11,9 +11,8 @@ builds:
       - windows
     goarch:
       - amd64
+      - arm
       - arm64
-    targets:
-      - dist
     binary: feathr-cli
 release:
   github:
