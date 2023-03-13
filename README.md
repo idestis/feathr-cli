@@ -24,7 +24,7 @@ Getting started with `feathr-cli` is an introduction to the tool, from installat
 
 ### Installation
 
-To install the `feathr-cli` binary for Go, you can download the appropriate binary for your operating system from the project's GitHub Releases page.
+To install the `feathr-cli` binary for Go, you can download the appropriate binary for your operating system from the project's [GitHub Releases page](https://github.com/idestis/feathr-cli/releases).
 
 Once you have downloaded the binary, you can add it to your system's `PATH` environment variable to make it easily accessible from the command line.
 
