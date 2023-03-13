@@ -43,6 +43,14 @@ Simply answer the questions and the client profile will be created.`,
 				Validate: survey.Required,
 			},
 			{
+				Name: "currency",
+				Prompt: &survey.Input{
+					Message: "Which currency used to bill a client?",
+					Help:    "The currency may differ from client to client, but often you can use the same currency for all clients.",
+					Default: profile.Currency,
+				},
+			},
+			{
 				Name: "iban",
 				Prompt: &survey.Input{
 					Message: "What is the client IBAN?",
@@ -54,14 +62,6 @@ Simply answer the questions and the client profile will be created.`,
 				Prompt: &survey.Input{
 					Message: "What is the client bank details?",
 					Help:    "The bank details may be helpful tracking your income. If you don't know the bank details, you can leave this field empty.",
-				},
-			},
-			{
-				Name: "currency",
-				Prompt: &survey.Input{
-					Message: "Which currency used to bill a client?",
-					Help:    "The currency may differ from client to client, but often you can use the same currency for all clients.",
-					Default: profile.Currency,
 				},
 			},
 		}

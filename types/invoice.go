@@ -330,3 +330,21 @@ func (invoice *Invoice) Delete(dataDir string) error {
 	return nil
 
 }
+
+// func Send(profile Profile, invoice *Invoice, client *Client, smtp SMTPConfig, dataDir string) error {
+// 	_, err := NewSMTPClient(smtp)
+// 	if err != nil {
+// 		return fmt.Errorf("error creating smtp client: %v", err)
+// 	}
+// 	body := "Please see attached invoice for details."
+// 	headers := make(map[string]string)
+// 	headers["To"] = strings.Join(client.Email, ",")
+// 	headers["Subject"] = fmt.Sprintf("Invoice %v from %v", invoice.ID)
+// 	message := ""
+// 	for k, v := range headers {
+// 		message += fmt.Sprintf("%s: %s\r", k, v)
+// 	}
+// 	message += "\r" + body
+// 	// Ensure we have a generated PDF version
+// 	return nil
+// }

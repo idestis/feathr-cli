@@ -16,6 +16,7 @@ const (
 var (
 	dataDir string
 	cfgFile string
+	version Version
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -54,7 +55,8 @@ clients.`,
 	},
 }
 
-func Execute() {
+func Execute(v Version) {
+	version = v
 	cobra.CheckErr(rootCmd.Execute())
 }
 

@@ -1,0 +1,25 @@
+# .goreleaser.yml
+project_name: feathr-cli
+builds:
+  - main: ./main.go
+    ldflags: -s -w
+    env:
+      - CGO_ENABLED=0
+      - GO111MODULE=on
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    targets:
+      - dist
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+  template: |
+    {{ .ReleaseNotes }}
+

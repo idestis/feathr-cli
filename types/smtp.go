@@ -15,6 +15,15 @@ type SMTPConfig struct {
 	Password string `survey:"password" yaml:"password"` // The password to use for authentication with the SMTP server.
 }
 
+type Message struct {
+	To          []string
+	CC          []string
+	BCC         []string
+	Subject     string
+	Body        string
+	Attachments map[string][]byte
+}
+
 // NewSMTPClient returns a new SMTP client using the provided configuration.
 func NewSMTPClient(config SMTPConfig) (*smtp.Client, error) {
 	// Connect to the SMTP server.

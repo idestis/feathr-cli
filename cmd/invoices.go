@@ -119,6 +119,7 @@ func invoiceActions(invoice types.Invoice, client types.Client, profile types.Pr
 		fmt.Println("I am so sorry, but this feature is not yet implemented.")
 	case "Send":
 		fmt.Println("Send")
+		
 	case "Delete":
 		var confirm bool
 		if err := survey.AskOne(&survey.Confirm{
