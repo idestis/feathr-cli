@@ -36,7 +36,7 @@ Brew tap and formula will be released soon. Stay tunned.
 
 ### Initialization
 
-The `init` block is the first step in using the `feathr-cli` tool. During the init process, you can configure the preferred storage, which can be a sqlite or file-based storage, and also make other tweaks to the tool's behavior, such as choosing between **Generate on Create** feature or fulfill SMTP configuration to allow you send messages from the tool.
+The `init` block is the first step in using the `feathr-cli` tool. During the init process, you can set behaviour to **Generate on Create** / **Generate on Update** feature or fulfill SMTP configuration to allow you send messages from the tool.
 
 ### User Profile
 
