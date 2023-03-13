@@ -1,5 +1,4 @@
 # .goreleaser.yml
-project_name: feathr-cli
 builds:
   - main: ./main.go
     ldflags: -s -w
@@ -15,11 +14,30 @@ builds:
       - arm64
     targets:
       - dist
+    binary: feathr-cli
+release:
+  github:
+    owner: idestis
+    name: feathr-cli
+  draft: true
 changelog:
+  use: github
   sort: asc
+  abbrev: 6
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: "Bug fixes"
+      regexp: '^.*?bug(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
   filters:
+    # Commit messages matching the regexp listed here will be removed from
+    # the changelog
+    # Default is empty
     exclude:
-      - '^docs:'
-  template: |
-    {{ .ReleaseNotes }}
-
+      - "^docs:"
+      - typo
+      - (?i)foo
