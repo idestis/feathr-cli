@@ -10,6 +10,7 @@ import (
 	"github.com/idestis/feathr-cli/helpers"
 	"github.com/idestis/feathr-cli/types"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // createCmd represents the create command
@@ -137,6 +138,12 @@ proceed with client creation first.`,
 		invoice.Due = now.AddDate(0, 0, due)
 		invoice.Print()
 		invoice.WriteInvoice(dataDir)
+		generate := viper.GetBool("generate_on_create")
+		if generate {
+			client, err := types.ReadClientInfo(int(invoice.ClientID), dataDir)
+			cobra.CheckErr(err)
+			invoice.GeneratePDF(client, profile, dataDir)
+		}
 	},
 }
 
