@@ -51,13 +51,6 @@ Simply answer the questions and the client profile will be created.`,
 				},
 			},
 			{
-				Name: "iban",
-				Prompt: &survey.Input{
-					Message: "What is the client IBAN?",
-					Help:    "The IBAN is used to generate the invoice. If you don't know the IBAN, you can leave this field empty.",
-				},
-			},
-			{
 				Name: "bank",
 				Prompt: &survey.Input{
 					Message: "What is the client bank details?",
@@ -80,10 +73,10 @@ Simply answer the questions and the client profile will be created.`,
 				client.Email = append(client.Email, strings.TrimSpace(email))
 			}
 		}
-		fmt.Printf("%+v", client)
 		if err := client.WriteClientInfo(dataDir); err != nil {
 			cobra.CheckErr(err)
 		}
+		fmt.Println("Client profile created successfully!")
 	},
 }
 
