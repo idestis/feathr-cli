@@ -23,9 +23,6 @@ type Client struct {
 	// Address is the address of the client.
 	Address string `survey:"address" json:"address"`
 
-	// IBAN is a string that represents the user's International Bank Account Number (IBAN).
-	IBAN string `survey:"iban" json:"iban"`
-
 	// Bank is a string that represents the user's bank details.
 	Bank string `survey:"bank" json:"bank"`
 
@@ -115,9 +112,6 @@ func ReadClientInfo(id int, dataDir string) (Client, error) {
 func (client *Client) Print() error {
 	fmt.Println("\033[32mAddress:\033[0m", client.Address)
 	fmt.Println("\033[32mEmails:\033[0m", strings.Join(client.Email, ", "))
-	if client.IBAN != "" {
-		fmt.Println("\033[32mIBAN:\033[0m", client.IBAN)
-	}
 	if client.Bank != "" {
 		fmt.Println("\033[32mBank Details:\033[0m", client.Bank)
 	}
