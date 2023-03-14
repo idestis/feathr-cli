@@ -3,15 +3,18 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/AlecAivazis/survey/v2"
 	thousands "github.com/floscodes/golang-thousands"
 	"github.com/idestis/feathr-cli/helpers"
 	"github.com/idestis/feathr-cli/types"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var hideSent bool
@@ -70,7 +73,11 @@ Using this command you can edit, duplicate, send and delete invoices in a simple
 			}
 			total, _ := thousands.Separate(invoice.GetInvoiceTotal(), "en")
 			// TODO: Add currency and thousands separator
-			options = append(options, fmt.Sprintf("%d:\t%s // %v", id, client_names[int(invoice.ClientID)].Name, total))
+			if invoice.Sent.IsZero() {
+				options = append(options, fmt.Sprintf("%d:\t%s // %v", id, client_names[int(invoice.ClientID)].Name, total))
+			} else {
+				options = append(options, fmt.Sprintf("%d:\t\033[9m%s\033[0m // %v", id, client_names[int(invoice.ClientID)].Name, total))
+			}
 		}
 		if len(options) == 0 {
 			cobra.CheckErr(errors.New("no invoices found"))
@@ -118,8 +125,19 @@ func invoiceActions(invoice types.Invoice, client types.Client, profile types.Pr
 	case "Edit":
 		fmt.Println("I am so sorry, but this feature is not yet implemented.")
 	case "Send":
-		fmt.Println("Send")
-		
+		var smtp types.SMTPConfig
+		err := viper.UnmarshalKey("smtp", &smtp)
+		cobra.CheckErr(err)
+		path := fmt.Sprintf("%s/generated/%d.pdf", dataDir, invoice.ID)
+		if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+			// Generate the invoice if it does not exist
+			invoice.GeneratePDF(client, profile, dataDir)
+		}
+		err = smtp.SendEmailWithAttachment(client.Email, fmt.Sprintf("Invoice %d from %v", invoice.ID, profile.Name), "Please find attached invoice.", path)
+		cobra.CheckErr(err)
+		invoice.Sent = time.Now()
+		invoice.WriteInvoice(dataDir)
+		fmt.Println("Invoice has been sent.")
 	case "Delete":
 		var confirm bool
 		if err := survey.AskOne(&survey.Confirm{
