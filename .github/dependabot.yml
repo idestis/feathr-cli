@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    open-pull-requests-limit: 10
+    # Allow updates to Go modules with a matching version constraint
+    allow:
+      - dependency-name: "github.com/*"
+        versioning-strategy: "auto"
